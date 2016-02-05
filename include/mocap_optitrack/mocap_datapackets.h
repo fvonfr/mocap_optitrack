@@ -57,6 +57,15 @@ class Marker
     float positionZ;
 };
 
+class LabelledMarker
+{
+  public:
+		int ID;
+    float positionX;
+    float positionY;
+    float positionZ;
+};
+
 class Pose
 {
   public:
@@ -147,6 +156,8 @@ class MoCapDataFormat
 
     int frameNumber;
     ModelFrame model;
+    ModelFrame skeletons;
+		LabelledMarker* markers;
 
   private:
     void seek(size_t count);

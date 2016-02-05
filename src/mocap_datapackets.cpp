@@ -154,9 +154,59 @@ void MoCapDataFormat::parse()
     seek(sizeof(float));
   }
 
-  // TODO: read skeletons
+  // TODO: handle skeleton ID's and multiple skeletons
   int numSkeletons = 0;
   read_and_seek(numSkeletons);
+
+	//for number of skeletons
+	for(int i = 0; i<numSkeletons; i++){
+		seek(4); //skeleton ID
+		read_and_seek(skeletons.numRigidBodies);
+    skeletons.rigidBodies = new RigidBody[skeletons.numRigidBodies];
+		for (int m = 0; m < skeletons.numRigidBodies; m++)
+		{
+			// read id, position and orientation of each rigid body
+		  read_and_seek(skeletons.rigidBodies[m].ID);
+		  read_and_seek(skeletons.rigidBodies[m].pose);
+
+		  // get number of markers per rigid body
+		  read_and_seek(skeletons.rigidBodies[m].NumberOfMarkers);
+		  ROS_DEBUG("Rigid body ID: %d\n", skeletons.rigidBodies[m].ID);
+		  ROS_DEBUG("Number of rigid body markers: %d\n", skeletons.rigidBodies[m].NumberOfMarkers);
+		  if (skeletons.rigidBodies[m].NumberOfMarkers > 0)
+		  {
+		    skeletons.rigidBodies[m].marker = new Marker [skeletons.rigidBodies[m].NumberOfMarkers];
+		    size_t byte_count = skeletons.rigidBodies[m].NumberOfMarkers * sizeof(Marker);
+		    memcpy(skeletons.rigidBodies[m].marker, packet, byte_count);
+		    seek(byte_count);
+
+		    // skip marker IDs
+		    byte_count = skeletons.rigidBodies[m].NumberOfMarkers * sizeof(int);
+		    seek(byte_count);
+
+		    // skip marker sizes
+		    byte_count = skeletons.rigidBodies[m].NumberOfMarkers * sizeof(float);
+		    seek(byte_count);
+		  }
+
+		  // skip mean marker error
+		  seek(sizeof(float));
+		}
+	}
+
+	int numLabelledMarkers;
+	read_and_seek(numLabelledMarkers);
+	markers = new LabelledMarker[numLabelledMarkers];
+	for(int i = 0; i < numLabelledMarkers; i++){
+		int byte_count = sizeof(LabelledMarker);
+		memcpy(&markers[i], packet, byte_count);
+		seek(byte_count);
+		seek(sizeof(float)); //size
+		seek(2); //natNet 2.6+ have marker params
+		ROS_DEBUG("Labelled Marker ID: %d\n", markers[i].ID);
+	}
+
+
 
   // get latency
   read_and_seek(model.latency);
